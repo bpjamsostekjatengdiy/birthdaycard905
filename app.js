@@ -127,36 +127,65 @@ async function importTemplate(event) {
   state.templateImage = await urlToImage(dataUrl);
   state.templateName = file.name;
   elements.templateStatus.textContent = `Template aktif: ${file.name}`;
-  saveTemplate(dataUrl, file.name);
+  await saveTemplate(dataUrl, file.name);
 }
 
-function resetTemplate() {
+async function resetTemplate() {
   state.templateImage = null;
   state.templateName = "";
   elements.templateInput.value = "";
   elements.templateStatus.textContent = "Template bawaan aktif.";
   localStorage.removeItem(templateStorageKey);
+  try {
+    await fetch("/template", { method: "DELETE" });
+  } catch (error) {
+    console.warn("Template baku di server belum bisa dihapus.", error);
+  }
 }
 
 async function loadSavedTemplate() {
+  if (await loadServerTemplate()) return;
+
   try {
     const saved = JSON.parse(localStorage.getItem(templateStorageKey) || "null");
     if (!saved?.dataUrl) return;
     state.templateImage = await urlToImage(saved.dataUrl);
     state.templateName = saved.name || "template tersimpan";
     elements.templateStatus.textContent = `Template aktif: ${state.templateName}`;
+    await saveTemplate(saved.dataUrl, state.templateName);
   } catch (error) {
     console.warn("Template tersimpan tidak bisa dimuat.", error);
     localStorage.removeItem(templateStorageKey);
   }
 }
 
-function saveTemplate(dataUrl, name) {
+async function loadServerTemplate() {
+  try {
+    const metaResponse = await fetch("/template-meta", { cache: "no-store" });
+    if (!metaResponse.ok) return false;
+    const meta = await metaResponse.json();
+    state.templateImage = await urlToImage(`/saved-template?v=${encodeURIComponent(meta.savedAt || Date.now())}`);
+    state.templateName = meta.name || "template baku";
+    elements.templateStatus.textContent = `Template aktif: ${state.templateName}`;
+    return true;
+  } catch (error) {
+    console.warn("Template baku server tidak bisa dimuat.", error);
+    return false;
+  }
+}
+
+async function saveTemplate(dataUrl, name) {
   try {
     localStorage.setItem(templateStorageKey, JSON.stringify({ dataUrl, name }));
+    const response = await fetch("/template", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ dataUrl, name }),
+    });
+    if (!response.ok) throw new Error(await response.text());
   } catch (error) {
-    console.warn("Template tidak bisa disimpan permanen di browser.", error);
-    elements.templateStatus.textContent = `Template aktif: ${name}. Tidak bisa disimpan permanen.`;
+    console.warn("Template tidak bisa disimpan permanen.", error);
+    elements.templateStatus.textContent = `Template aktif: ${name}. Tidak bisa disimpan sebagai template baku.`;
   }
 }
 
@@ -545,8 +574,14 @@ async function getPersonPhoto(person) {
   if (!person.photoUrl) return null;
   try {
     return await urlToImage(`/proxy-image?url=${encodeURIComponent(person.photoUrl)}`);
-  } catch {
-    return await urlToImage(person.photoUrl);
+  } catch (proxyError) {
+    console.warn(`Foto ${person.name} gagal lewat proxy.`, proxyError);
+    try {
+      return await urlToImage(person.photoUrl);
+    } catch (directError) {
+      console.warn(`Foto ${person.name} tidak bisa dimuat.`, directError);
+      return null;
+    }
   }
 }
 
@@ -1058,7 +1093,7 @@ function urlToImage(url) {
     const image = new Image();
     image.crossOrigin = "anonymous";
     image.onload = () => resolve(image);
-    image.onerror = reject;
+    image.onerror = () => reject(new Error(`Gambar tidak bisa dimuat: ${url}`));
     image.src = url;
   });
 }
