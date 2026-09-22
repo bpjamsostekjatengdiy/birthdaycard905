@@ -175,17 +175,19 @@ async function loadServerTemplate() {
 }
 
 async function saveTemplate(dataUrl, name) {
+  localStorage.setItem(templateStorageKey, JSON.stringify({ dataUrl, name }));
+
   try {
-    localStorage.setItem(templateStorageKey, JSON.stringify({ dataUrl, name }));
     const response = await fetch("/template", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ dataUrl, name }),
     });
     if (!response.ok) throw new Error(await response.text());
+    elements.templateStatus.textContent = `Template aktif: ${name}`;
   } catch (error) {
-    console.warn("Template tidak bisa disimpan permanen.", error);
-    elements.templateStatus.textContent = `Template aktif: ${name}. Tidak bisa disimpan sebagai template baku.`;
+    console.warn("Template hanya bisa disimpan di browser ini.", error);
+    elements.templateStatus.textContent = `Template aktif: ${name}. Tersimpan di browser ini.`;
   }
 }
 
@@ -344,7 +346,7 @@ function createPersonCard(person) {
   const card = document.createElement("label");
   card.className = "person-card";
   const avatar = person.photoUrl
-    ? `<span class="avatar has-photo"><img src="${avatarPhotoUrl(person.photoUrl)}" alt="Foto ${escapeHtml(person.name)}" onerror="this.remove(); this.parentElement.textContent='${initials(person.name)}';" /></span>`
+    ? `<span class="avatar has-photo"><img src="${escapeHtml(person.photoUrl)}" alt="Foto ${escapeHtml(person.name)}" onerror="this.remove(); this.parentElement.textContent='${initials(person.name)}';" /></span>`
     : `<span class="avatar">${initials(person.name)}</span>`;
   card.innerHTML = `
     <input type="checkbox" ${state.selectedIds.has(person.id) ? "checked" : ""} />
@@ -395,10 +397,6 @@ function peopleOn(date) {
 
 function getTodayBirthdayPeople() {
   return peopleOn(new Date());
-}
-
-function avatarPhotoUrl(url) {
-  return `/proxy-image?url=${encodeURIComponent(url)}`;
 }
 
 async function generateSelectedCards() {
@@ -572,17 +570,34 @@ function drawContain(ctx, image, x, y, width, height) {
 
 async function getPersonPhoto(person) {
   if (!person.photoUrl) return null;
-  try {
-    return await urlToImage(`/proxy-image?url=${encodeURIComponent(person.photoUrl)}`);
-  } catch (proxyError) {
-    console.warn(`Foto ${person.name} gagal lewat proxy.`, proxyError);
+
+  for (const source of imageSourceCandidates(person.photoUrl)) {
     try {
-      return await urlToImage(person.photoUrl);
-    } catch (directError) {
-      console.warn(`Foto ${person.name} tidak bisa dimuat.`, directError);
-      return null;
+      return await urlToImage(source);
+    } catch (error) {
+      console.warn(`Foto ${person.name} gagal dimuat dari ${source}.`, error);
     }
   }
+
+  return null;
+}
+
+function imageSourceCandidates(url) {
+  return uniqueValues([localProxyImageUrl(url), weservImageUrl(url), url]).filter(Boolean);
+}
+
+function localProxyImageUrl(url) {
+  if (!["localhost", "127.0.0.1"].includes(window.location.hostname)) return "";
+  return `/proxy-image?url=${encodeURIComponent(url)}`;
+}
+
+function weservImageUrl(url) {
+  if (!/^https?:\/\//i.test(url)) return "";
+  return `https://images.weserv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//i, ""))}`;
+}
+
+function uniqueValues(values) {
+  return Array.from(new Set(values));
 }
 
 function removeBackgroundByEdgeColor(image) {

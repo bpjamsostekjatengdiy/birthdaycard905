@@ -36,7 +36,7 @@ Alias kolom yang juga dibaca:
 ## Catatan
 
 - Template card bisa di-upload dari panel kanan dan bisa diganti sewaktu-waktu. Tombol `Reset` mengembalikan ke template bawaan.
-- Foto karyawan bisa dari `photo_url` di spreadsheet atau upload manual. Untuk upload manual, nama file perlu mirip dengan nama karyawan, misalnya `andi-pratama.jpg`.
-- Saat klik `Generate Card`, aplikasi membuat preview terlebih dulu. Foto dari `photo_url` akan dibuka lewat proxy lokal `/proxy-image`, diproses hapus background sederhana berbasis warna tepi foto, lalu ditempel ke template.
+- Foto karyawan dimuat dari `photo_url` atau `photolink` di spreadsheet.
+- Saat klik `Buat Kartu Ucapan`, aplikasi membuat preview terlebih dulu. Foto dari link akan dibuka lewat proxy lokal saat tersedia, diproses hapus background sederhana, lalu ditempel ke template.
 - Hapus background di versi ringan ini paling cocok untuk foto dengan background polos. Untuk hasil rapi pada semua jenis foto, nanti bisa diganti dengan backend/API background removal khusus.
-- Pengiriman WhatsApp massal dibuat sebagai daftar link karena browser sering memblokir pembukaan banyak tab otomatis.
+- WhatsApp dibuka per kartu dari preview. Setelah klik `Buka WA`, paste card dengan `Ctrl+V` di WhatsApp.
