@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Birthday Card Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Dashboard HR</p>
+        <h1>Birthday Card</h1>
+      </div>
+      <div class="topbar-actions">
+        <button id="todayBtn" class="primary-btn" type="button"><span aria-hidden="true">📅</span> Hari Ini</button>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="calendar-area" aria-label="Kalender ulang tahun">
+        <div class="calendar-toolbar">
+          <button id="prevMonthBtn" class="icon-btn" type="button" aria-label="Bulan sebelumnya">
+            <span aria-hidden="true">‹</span>
+          </button>
+          <div>
+            <p id="currentYear" class="muted"></p>
+            <h2 id="currentMonth"></h2>
+          </div>
+          <button id="nextMonthBtn" class="icon-btn" type="button" aria-label="Bulan berikutnya">
+            <span aria-hidden="true">›</span>
+          </button>
+        </div>
+        <div class="weekday-row" aria-hidden="true">
+          <span>Sen</span>
+          <span>Sel</span>
+          <span>Rab</span>
+          <span>Kam</span>
+          <span>Jum</span>
+          <span>Sab</span>
+          <span>Min</span>
+        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </section>
+
+      <aside class="side-panel" aria-label="Panel aksi ulang tahun">
+        <section class="panel-section">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Prioritas</p>
+              <h2>Ultah Hari Ini</h2>
+              <p id="todayDateLabel" class="today-date"></p>
+            </div>
+            <span id="todayCount" class="count-pill">0</span>
+          </div>
+          <label id="selectAllTodayWrap" class="select-all-row">
+            <input id="selectAllToday" type="checkbox" />
+            <span>Pilih semua</span>
+          </label>
+          <div id="todayList" class="person-list empty-state">
+            Belum ada data ulang tahun hari ini.
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Template</p>
+              <h2>Card Template</h2>
+            </div>
+            <button id="resetTemplateBtn" class="ghost-btn compact-btn" type="button"><span aria-hidden="true">↺</span> Reset</button>
+          </div>
+          <label class="file-drop">
+            <input id="templateInput" type="file" accept="image/*" />
+            <span><span aria-hidden="true">🖼</span> Upload template baru</span>
+            <small>PNG/JPG 1080x1350. Bisa diganti kapan saja.</small>
+          </label>
+          <p id="templateStatus" class="template-status">Template bawaan aktif.</p>
+        </section>
+      </aside>
+    </main>
+
+    <section class="action-dock" aria-label="Aksi pilihan">
+      <div>
+        <p class="muted">Terpilih</p>
+        <strong id="selectedCount">0 orang</strong>
+      </div>
+      <div class="dock-actions">
+        <button id="generateBtn" class="primary-btn" type="button"><span aria-hidden="true">✨</span> Buat Kartu Ucapan</button>
+      </div>
+    </section>
+
+    <dialog id="waDialog">
+      <form method="dialog" class="dialog-panel">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">WhatsApp</p>
+            <h2 id="waPersonName">Kirim Card</h2>
+          </div>
+          <button class="icon-btn" value="close" aria-label="Tutup">×</button>
+        </div>
+        <div class="wa-send-layout">
+          <img id="waPreviewImage" class="wa-preview-image" alt="Preview card yang akan dikirim" />
+          <div class="wa-send-panel">
+            <label class="field">
+              <span>Caption</span>
+              <textarea id="waCaptionInput" rows="9"></textarea>
+            </label>
+            <p id="waFileName" class="hint"></p>
+            <p class="wa-note">
+              Setelah klik <strong>Buka WA</strong>, silahkan klik paste (<kbd>Ctrl</kbd> + <kbd>V</kbd>) di WA untuk paste birthday card nya.
+            </p>
+            <div class="button-row">
+              <button id="downloadWaImageBtn" class="primary-btn" type="button"><span aria-hidden="true">⬇</span> Download Gambar</button>
+              <button id="openWaLink" class="success-btn link-btn" type="button"><span aria-hidden="true">💬</span> Buka WA</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="previewDialog">
+      <form method="dialog" class="dialog-panel preview-dialog">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Preview</p>
+            <h2>Birthday Card</h2>
+          </div>
+          <div class="preview-actions">
+            <button id="downloadAllBtn" class="ghost-btn" type="button"><span aria-hidden="true">⬇</span> Download Semua</button>
+            <button class="icon-btn" value="close" aria-label="Tutup">×</button>
+          </div>
+        </div>
+        <p id="generationStatus" class="hint">Menyiapkan preview card...</p>
+        <div id="previewList" class="preview-list"></div>
+      </form>
+    </dialog>
+
+    <canvas id="cardCanvas" width="1080" height="1350" hidden></canvas>
+    <script src="app.js"></script>
+  </body>
+</html>
