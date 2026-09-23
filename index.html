@@ -102,6 +102,18 @@
         <div class="wa-send-layout">
           <img id="waPreviewImage" class="wa-preview-image" alt="Preview card yang akan dikirim" />
           <div class="wa-send-panel">
+            <fieldset class="wa-target-box">
+              <legend>Kirim ke</legend>
+              <label>
+                <input type="radio" name="waTargetMode" value="employee" checked />
+                <span>Nomor karyawan</span>
+              </label>
+              <label>
+                <input type="radio" name="waTargetMode" value="custom" />
+                <span>Nomor custom</span>
+              </label>
+              <input id="waCustomNumber" type="tel" inputmode="numeric" placeholder="Contoh: 081234567890" disabled />
+            </fieldset>
             <label class="field">
               <span>Caption</span>
               <textarea id="waCaptionInput" rows="9"></textarea>

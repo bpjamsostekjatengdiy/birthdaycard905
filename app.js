@@ -31,6 +31,7 @@ const state = {
   displayDate: new Date(),
   templateImage: null,
   templateName: "",
+  waCustomNumber: "",
 };
 
 const elements = {
@@ -50,6 +51,7 @@ const elements = {
   waPersonName: document.querySelector("#waPersonName"),
   waPreviewImage: document.querySelector("#waPreviewImage"),
   waCaptionInput: document.querySelector("#waCaptionInput"),
+  waCustomNumber: document.querySelector("#waCustomNumber"),
   waFileName: document.querySelector("#waFileName"),
   downloadWaImageBtn: document.querySelector("#downloadWaImageBtn"),
   openWaLink: document.querySelector("#openWaLink"),
@@ -69,6 +71,8 @@ elements.downloadAllBtn.addEventListener("click", () => downloadAllGeneratedCard
 elements.downloadWaImageBtn.addEventListener("click", downloadCurrentWaImage);
 elements.openWaLink.addEventListener("click", openWaWithCopiedCard);
 elements.waCaptionInput.addEventListener("input", updateOpenWaLinkCaption);
+elements.waCustomNumber.addEventListener("input", updateCustomWaNumber);
+document.querySelectorAll("input[name='waTargetMode']").forEach((input) => input.addEventListener("change", updateWaTargetMode));
 elements.templateInput.addEventListener("change", importTemplate);
 elements.resetTemplateBtn.addEventListener("click", resetTemplate);
 
@@ -472,8 +476,7 @@ async function drawCard(person) {
     drawDefaultTemplate(ctx);
   }
 
-  const photo = await getPersonPhoto(person);
-  const photoLayer = photo ? removeBackgroundByEdgeColor(photo) : null;
+  const photoLayer = await getPersonPhoto(person);
 
   if (state.templateImage) {
     drawUploadedTemplateContent(ctx, person, photoLayer);
@@ -484,12 +487,7 @@ async function drawCard(person) {
 
 function drawUploadedTemplateContent(ctx, person, photoLayer) {
   if (photoLayer) {
-    ctx.save();
-    ctx.shadowColor = "rgba(15, 23, 42, 0.18)";
-    ctx.shadowBlur = 16;
-    ctx.shadowOffsetY = 8;
-    drawContain(ctx, photoLayer, 347, 322, 386, 430);
-    ctx.restore();
+    drawIntegratedPhoto(ctx, photoLayer, 347, 322, 386, 430);
   }
 
   ctx.textAlign = "center";
@@ -508,12 +506,7 @@ function drawUploadedTemplateContent(ctx, person, photoLayer) {
 
 function drawDefaultCardContent(ctx, person, photoLayer) {
   if (photoLayer) {
-    ctx.save();
-    ctx.shadowColor = "rgba(15, 23, 42, 0.22)";
-    ctx.shadowBlur = 26;
-    ctx.shadowOffsetY = 14;
-    drawContain(ctx, photoLayer, 300, 175, 480, 500);
-    ctx.restore();
+    drawIntegratedPhoto(ctx, photoLayer, 300, 175, 480, 500);
   }
 
   ctx.fillStyle = "#172033";
@@ -566,6 +559,62 @@ function drawContain(ctx, image, x, y, width, height) {
   const drawWidth = image.width * ratio;
   const drawHeight = image.height * ratio;
   ctx.drawImage(image, x + (width - drawWidth) / 2, y + height - drawHeight, drawWidth, drawHeight);
+}
+
+function drawIntegratedPhoto(ctx, image, x, y, width, height) {
+  const framePadding = 6;
+  const radius = 24;
+  const innerX = x + framePadding;
+  const innerY = y + framePadding;
+  const innerWidth = width - framePadding * 2;
+  const innerHeight = height - framePadding * 2;
+
+  ctx.save();
+  ctx.shadowColor = "rgba(15, 23, 42, 0.16)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 12;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+  roundedRect(ctx, x, y, width, height, radius);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  roundedRect(ctx, innerX, innerY, innerWidth, innerHeight, radius - 8);
+  ctx.clip();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.86)";
+  ctx.fillRect(innerX, innerY, innerWidth, innerHeight);
+  ctx.filter = "brightness(1.04) contrast(0.96) saturate(0.92)";
+  drawCover(ctx, image, innerX, innerY, innerWidth, innerHeight);
+  ctx.filter = "none";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+  ctx.fillRect(innerX, innerY, innerWidth, innerHeight);
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.88)";
+  ctx.lineWidth = 8;
+  roundedRect(ctx, x + 4, y + 4, width - 8, height - 8, radius - 3);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(37, 99, 235, 0.12)";
+  ctx.lineWidth = 2;
+  roundedRect(ctx, innerX, innerY, innerWidth, innerHeight, radius - 8);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function roundedRect(ctx, x, y, width, height, radius) {
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + safeRadius, y);
+  ctx.lineTo(x + width - safeRadius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
+  ctx.lineTo(x + width, y + height - safeRadius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height);
+  ctx.lineTo(x + safeRadius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
+  ctx.lineTo(x, y + safeRadius);
+  ctx.quadraticCurveTo(x, y, x + safeRadius, y);
+  ctx.closePath();
 }
 
 async function getPersonPhoto(person) {
@@ -984,7 +1033,12 @@ function openWaPreview(card) {
   elements.downloadWaImageBtn.dataset.filename = card.filename;
   elements.downloadWaImageBtn.dataset.dataUrl = card.dataUrl;
   elements.openWaLink.dataset.dataUrl = card.dataUrl;
-  elements.openWaLink.dataset.waUrl = makeWaUrl(card.person, caption);
+  elements.openWaLink.dataset.personId = card.person.id;
+  state.waCustomNumber = "";
+  elements.waCustomNumber.value = "";
+  elements.waCustomNumber.disabled = true;
+  document.querySelector("input[name='waTargetMode'][value='employee']").checked = true;
+  updateOpenWaLinkCaption();
   elements.waDialog.showModal();
 }
 
@@ -1008,9 +1062,28 @@ async function copyCurrentWaImage() {
 }
 
 function updateOpenWaLinkCaption() {
-  const card = state.generatedCards.find((item) => item.filename === elements.downloadWaImageBtn.dataset.filename);
+  const card = state.generatedCards.find((item) => item.person.id === elements.openWaLink.dataset.personId);
   if (!card) return;
-  elements.openWaLink.dataset.waUrl = makeWaUrl(card.person, elements.waCaptionInput.value);
+  const number = getSelectedWaNumber(card.person);
+  elements.openWaLink.disabled = !number;
+  elements.openWaLink.dataset.waUrl = number ? makeWaUrl(number, elements.waCaptionInput.value) : "";
+}
+
+function updateWaTargetMode() {
+  const isCustom = document.querySelector("input[name='waTargetMode']:checked")?.value === "custom";
+  elements.waCustomNumber.disabled = !isCustom;
+  if (isCustom) elements.waCustomNumber.focus();
+  updateOpenWaLinkCaption();
+}
+
+function updateCustomWaNumber() {
+  state.waCustomNumber = elements.waCustomNumber.value;
+  updateOpenWaLinkCaption();
+}
+
+function getSelectedWaNumber(person) {
+  const mode = document.querySelector("input[name='waTargetMode']:checked")?.value || "employee";
+  return mode === "custom" ? state.waCustomNumber : person.wa;
 }
 
 async function openWaWithCopiedCard() {
@@ -1037,8 +1110,8 @@ Salam Hangat
 Kanwil Jateng & DIY`;
 }
 
-function makeWaUrl(person, caption = makeWaCaption(person)) {
-  const number = normalizeWa(person.wa);
+function makeWaUrl(waNumber, caption) {
+  const number = normalizeWa(waNumber);
   return `https://wa.me/${number}?text=${encodeURIComponent(caption)}`;
 }
 
