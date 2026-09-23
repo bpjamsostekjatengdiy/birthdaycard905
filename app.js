@@ -632,7 +632,13 @@ async function getPersonPhoto(person) {
 }
 
 function imageSourceCandidates(url) {
-  return uniqueValues([localProxyImageUrl(url), weservImageUrl(url), url]).filter(Boolean);
+  return uniqueValues([
+    localProxyImageUrl(url),
+    weservImageUrl(url),
+    wsrvImageUrl(url),
+    allOriginsImageUrl(url),
+    url,
+  ]).filter(Boolean);
 }
 
 function localProxyImageUrl(url) {
@@ -643,6 +649,16 @@ function localProxyImageUrl(url) {
 function weservImageUrl(url) {
   if (!/^https?:\/\//i.test(url)) return "";
   return `https://images.weserv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//i, ""))}`;
+}
+
+function wsrvImageUrl(url) {
+  if (!/^https?:\/\//i.test(url)) return "";
+  return `https://wsrv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//i, ""))}`;
+}
+
+function allOriginsImageUrl(url) {
+  if (!/^https?:\/\//i.test(url)) return "";
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
 function uniqueValues(values) {
@@ -1004,11 +1020,11 @@ function addPreviewError(person, error) {
   const card = document.createElement("article");
   card.className = "preview-card preview-error";
   card.innerHTML = `
-    <div class="preview-meta">
-      <strong>${escapeHtml(person.name)}</strong>
-      <p class="hint">Gagal membuat preview. Link foto mungkin tidak bisa diproses canvas atau tidak bisa diambil server lokal.</p>
-      <small>${escapeHtml(error.message || String(error))}</small>
-    </div>
+      <div class="preview-meta">
+        <strong>${escapeHtml(person.name)}</strong>
+        <p class="hint">Gagal membuat preview. Link foto mungkin diblokir CORS/hotlink; di GitHub Pages perlu proxy foto yang bisa diakses publik.</p>
+        <small>${escapeHtml(error.message || String(error))}</small>
+      </div>
   `;
   elements.previewList.appendChild(card);
 }
